@@ -2,15 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
 const App = () => {
-  const [uploadedImage, setUploadedImage] = useState(null); // Image data URL
-  const [gridSize, setGridSize] = useState(3); // Puzzle grid size
-  const [grid, setGrid] = useState([]); // Puzzle grid array
-  const [isSolved, setIsSolved] = useState(false); // Puzzle solved state
-  const [elapsedTime, setElapsedTime] = useState(0); // Elapsed time
-  const [isStarted, setIsStarted] = useState(false); // Puzzle running state
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 }); // Image dimensions
+  const [uploadedImage, setUploadedImage] = useState(null); 
+  const [gridSize, setGridSize] = useState(3); 
+  const [grid, setGrid] = useState([]); 
+  const [isSolved, setIsSolved] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0); 
+  const [isStarted, setIsStarted] = useState(false); 
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 }); 
 
-  // Generate and shuffle the grid
   const generateShuffledGrid = useCallback((size) => {
     const numbers = Array.from({ length: size * size }, (_, i) => i);
     for (let i = numbers.length - 1; i > 0; i--) {
@@ -35,8 +34,7 @@ const App = () => {
     };
   };
 
-  // Image upload handler
-  const handleImageUpload = (e) => {
+   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -54,7 +52,7 @@ const App = () => {
     }
   };
 
-  // Generate puzzle grid
+ 
   const handleGenerateGrid = () => {
     const shuffledGrid = generateShuffledGrid(gridSize);
     setGrid(shuffledGrid);
@@ -62,7 +60,7 @@ const App = () => {
     setElapsedTime(0);
     setIsStarted(false);
 
-    // Save grid and state to localStorage
+   
     localStorage.setItem('puzzleState', JSON.stringify({
       gridSize,
       grid: shuffledGrid,
@@ -97,7 +95,7 @@ const App = () => {
     e.dataTransfer.setData('tileIndex', index);
   };
 
-  // Swap tiles when dropped
+  
   const swapTiles = (fromIndex, toIndex) => {
     if (fromIndex === toIndex) return;
     const updatedGrid = [...grid];
