@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
-function App() {
+const App = () => {
   const [uploadedImage, setUploadedImage] = useState(null);
-  const [gridSize, setGridSize] = useState(3); // Default to a 3x3 grid
+  const [gridSize, setGridSize] = useState(3);
   const [grid, setGrid] = useState([]);
   const [isSolved, setIsSolved] = useState(false);
   const [startTime, setStartTime] = useState(null);
@@ -21,14 +21,11 @@ function App() {
   }, []);
 
   const getTileBackground = (index) => {
-    if (!uploadedImage || imageDimensions.width === 0 || imageDimensions.height === 0) return {};
-
+    if (!uploadedImage || !imageDimensions.width || !imageDimensions.height) return {};
     const tileWidth = imageDimensions.width / gridSize;
     const tileHeight = imageDimensions.height / gridSize;
-
     const row = Math.floor(index / gridSize);
     const col = index % gridSize;
-
     return {
       backgroundImage: `url(${uploadedImage})`,
       backgroundPosition: `-${col * tileWidth}px -${row * tileHeight}px`,
@@ -46,35 +43,29 @@ function App() {
         setUploadedImage(reader.result);
         const img = new Image();
         img.src = reader.result;
-        img.onload = () => {
-          setImageDimensions({ width: img.width, height: img.height });
-        };
+        img.onload = () => setImageDimensions({ width: img.width, height: img.height });
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleGenerateGrid = () => {
-    if (gridSize < 1) {
-      alert("Grid size must be at least 1");
-      return;
-    }
-
-    const shuffledGrid = generateShuffledGrid(gridSize);
-    setGrid(shuffledGrid);
+    if (gridSize < 1) return alert("Grid size must be at least 1");
+    setGrid(generateShuffledGrid(gridSize));
     setIsSolved(false);
     setElapsedTime(0);
     setIsStarted(false);
   };
 
   const handleStartPuzzle = () => {
-    if (grid.length > 0) {
+    if (grid.length) {
       setIsStarted(true);
       setStartTime(Date.now());
     }
   };
 
   const handleTileDrop = (e, dropIndex) => {
+    if (!isStarted) return;
     const dragIndex = e.dataTransfer.getData('tileIndex');
     swapTiles(parseInt(dragIndex, 10), dropIndex);
   };
@@ -85,27 +76,18 @@ function App() {
 
   const swapTiles = (fromIndex, toIndex) => {
     if (fromIndex === toIndex) return;
-
     const updatedGrid = [...grid];
     [updatedGrid[fromIndex], updatedGrid[toIndex]] = [updatedGrid[toIndex], updatedGrid[fromIndex]];
     setGrid(updatedGrid);
-
-    // Check if the puzzle is solved
-    const isSolved = updatedGrid.every((num, idx) => num === idx);
-    setIsSolved(isSolved);
-
-    if (isSolved) {
-      setIsStarted(false);
-    }
+    const solved = updatedGrid.every((num, idx) => num === idx);
+    setIsSolved(solved);
+    if (solved) setIsStarted(false);
   };
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      if (isStarted) {
-        setElapsedTime((prev) => prev + 1000);
-      }
+      if (isStarted) setElapsedTime((prev) => prev + 1000);
     }, 1000);
-
     return () => clearInterval(intervalId);
   }, [isStarted]);
 
@@ -119,21 +101,13 @@ function App() {
       setElapsedTime(savedState.elapsedTime);
       setIsSolved(savedState.isSolved);
       setIsStarted(savedState.isStarted);
-      if (savedState.isStarted) {
-        setStartTime(Date.now());
-      }
+      if (savedState.isStarted) setStartTime(Date.now());
     }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('puzzleState', JSON.stringify({
-      gridSize,
-      grid,
-      uploadedImage,
-      imageDimensions,
-      elapsedTime,
-      isSolved,
-      isStarted,
+      gridSize, grid, uploadedImage, imageDimensions, elapsedTime, isSolved, isStarted,
     }));
   }, [gridSize, grid, uploadedImage, imageDimensions, elapsedTime, isSolved, isStarted]);
 
@@ -141,12 +115,7 @@ function App() {
     <div className="App flex flex-col items-center py-8">
       <h1 className="text-4xl font-bold text-gray-800 mb-8">Image Puzzle App</h1>
 
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="mb-4"
-      />
+      <input type="file" accept="image/*" onChange={handleImageUpload} className="mb-4" />
 
       <div className="mb-8 flex space-x-4">
         <input
@@ -157,25 +126,21 @@ function App() {
           placeholder="Grid size"
           min={1}
         />
-        <button
-          onClick={handleGenerateGrid}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
+        <button onClick={handleGenerateGrid} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           Generate Grid
         </button>
-        <button
-          onClick={handleStartPuzzle}
-          className={`bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ${isStarted ? 'hidden' : ''}`}
-        >
-          Start Puzzle
-        </button>
+        
+        {isStarted ? (
+          <div className="text-xl">Time Elapsed: {Math.floor(elapsedTime / 1000)} seconds</div>
+        ) : (
+          <button onClick={handleStartPuzzle} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            Start Puzzle
+          </button>
+        )}
       </div>
 
       {grid.length > 0 && (
-        <div
-          className="grid mb-8 border-2 border-double rounded-md border-gray-300 p-2"
-          style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}
-        >
+        <div className="grid mb-8 border-2 border-double rounded-md border-gray-300 p-2" style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)` }}>
           {grid.map((value, index) => (
             <div
               key={index}
@@ -186,37 +151,31 @@ function App() {
               onDragOver={(e) => e.preventDefault()}
               style={getTileBackground(value)}
             >
-              {value === 0 ? '' : value + 1} {/* To show 1-based index */}
+              {value === 0 ? '' : value + 1}
             </div>
           ))}
         </div>
       )}
 
       {isSolved && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
-            <h2 className="text-2xl font-bold mb-4">Puzzle Completed!</h2>
-            <p className="text-xl">Time taken: {Math.floor(elapsedTime / 1000)} seconds</p>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-8 rounded shadow-md text-center">
+            <h2 className="text-2xl font-bold mb-4">Congratulations!</h2>
+            <p className="mb-4">You've completed the puzzle in {Math.floor(elapsedTime / 1000)} seconds!</p>
             <button
-              className="bg-green-500 text-white px-4 py-2 rounded"
               onClick={() => {
                 setIsSolved(false);
-                setElapsedTime(0);
+                handleGenerateGrid();
               }}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
             >
-              Close
+              Play Again
             </button>
           </div>
         </div>
       )}
-
-      {isStarted && !isSolved && (
-        <div className="mt-4">
-          <p className="text-xl">Time Elapsed: {Math.floor(elapsedTime / 1000)} seconds</p>
-        </div>
-      )}
     </div>
   );
-}
+};
 
 export default App;
