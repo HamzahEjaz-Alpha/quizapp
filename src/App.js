@@ -2,15 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 
 const App = () => {
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const [gridSize, setGridSize] = useState(3);
-  const [grid, setGrid] = useState([]);
-  const [isSolved, setIsSolved] = useState(false);
-  const [startTime, setStartTime] = useState(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [isStarted, setIsStarted] = useState(false);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [uploadedImage, setUploadedImage] = useState(null); // Image data URL
+  const [gridSize, setGridSize] = useState(3); // Puzzle grid size
+  const [grid, setGrid] = useState([]); // Puzzle grid array
+  const [isSolved, setIsSolved] = useState(false); // Puzzle solved state
+  const [elapsedTime, setElapsedTime] = useState(0); // Elapsed time
+  const [isStarted, setIsStarted] = useState(false); // Puzzle running state
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 }); // Image dimensions
 
+  // Generate and shuffle the grid
   const generateShuffledGrid = useCallback((size) => {
     const numbers = Array.from({ length: size * size }, (_, i) => i);
     for (let i = numbers.length - 1; i > 0; i--) {
@@ -35,6 +35,7 @@ const App = () => {
     };
   };
 
+  // Image upload handler
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -44,23 +45,44 @@ const App = () => {
         const img = new Image();
         img.src = reader.result;
         img.onload = () => setImageDimensions({ width: img.width, height: img.height });
+
+        // Save image to localStorage
+        localStorage.setItem('uploadedImage', reader.result);
       };
       reader.readAsDataURL(file);
     }
   };
 
+  // Generate puzzle grid
   const handleGenerateGrid = () => {
-    if (gridSize < 1) return alert("Grid size must be at least 1");
-    setGrid(generateShuffledGrid(gridSize));
+    const shuffledGrid = generateShuffledGrid(gridSize);
+    setGrid(shuffledGrid);
     setIsSolved(false);
     setElapsedTime(0);
     setIsStarted(false);
+
+    // Save grid and state to localStorage
+    localStorage.setItem('puzzleState', JSON.stringify({
+      gridSize,
+      grid: shuffledGrid,
+      elapsedTime: 0,
+      isSolved: false,
+      isStarted: false,
+    }));
   };
 
   const handleStartPuzzle = () => {
     if (grid.length) {
       setIsStarted(true);
-      setStartTime(Date.now());
+
+      // Update puzzle state in localStorage
+      localStorage.setItem('puzzleState', JSON.stringify({
+        gridSize,
+        grid,
+        elapsedTime,
+        isSolved,
+        isStarted: true,
+      }));
     }
   };
 
@@ -74,6 +96,7 @@ const App = () => {
     e.dataTransfer.setData('tileIndex', index);
   };
 
+  // Swap tiles when dropped
   const swapTiles = (fromIndex, toIndex) => {
     if (fromIndex === toIndex) return;
     const updatedGrid = [...grid];
@@ -82,6 +105,15 @@ const App = () => {
     const solved = updatedGrid.every((num, idx) => num === idx);
     setIsSolved(solved);
     if (solved) setIsStarted(false);
+
+    // Update puzzle state in localStorage
+    localStorage.setItem('puzzleState', JSON.stringify({
+      gridSize,
+      grid: updatedGrid,
+      elapsedTime,
+      isSolved: solved,
+      isStarted: isStarted && !solved,
+    }));
   };
 
   useEffect(() => {
@@ -92,24 +124,42 @@ const App = () => {
   }, [isStarted]);
 
   useEffect(() => {
+    // Load previous state from localStorage
+    const savedImage = localStorage.getItem('uploadedImage');
     const savedState = JSON.parse(localStorage.getItem('puzzleState'));
-    if (savedState) {
+
+    if (savedImage) {
+      setUploadedImage(savedImage);
+      const img = new Image();
+      img.src = savedImage;
+      img.onload = () => setImageDimensions({ width: img.width, height: img.height });
+    }
+
+    if (savedState && savedState.grid.length > 0) {
       setGridSize(savedState.gridSize);
       setGrid(savedState.grid);
-      setUploadedImage(savedState.uploadedImage);
-      setImageDimensions(savedState.imageDimensions);
       setElapsedTime(savedState.elapsedTime);
       setIsSolved(savedState.isSolved);
       setIsStarted(savedState.isStarted);
-      if (savedState.isStarted) setStartTime(Date.now());
+
+      if (savedState.isStarted) {
+        setElapsedTime(savedState.elapsedTime); // Resume timer
+      }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('puzzleState', JSON.stringify({
-      gridSize, grid, uploadedImage, imageDimensions, elapsedTime, isSolved, isStarted,
-    }));
-  }, [gridSize, grid, uploadedImage, imageDimensions, elapsedTime, isSolved, isStarted]);
+    // Save puzzle state in localStorage whenever it changes
+    if (grid.length > 0) {
+      localStorage.setItem('puzzleState', JSON.stringify({
+        gridSize,
+        grid,
+        elapsedTime,
+        isSolved,
+        isStarted,
+      }));
+    }
+  }, [gridSize, grid, elapsedTime, isSolved, isStarted]);
 
   return (
     <div className="App flex flex-col items-center py-8">
@@ -129,7 +179,7 @@ const App = () => {
         <button onClick={handleGenerateGrid} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           Generate Grid
         </button>
-        
+
         {isStarted ? (
           <div className="text-xl">Time Elapsed: {Math.floor(elapsedTime / 1000)} seconds</div>
         ) : (
@@ -161,7 +211,7 @@ const App = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-8 rounded shadow-md text-center">
             <h2 className="text-2xl font-bold mb-4">Congratulations!</h2>
-            <p className="mb-4">You've completed the puzzle in {Math.floor(elapsedTime / 1000)} seconds!</p>
+            <p className="mb-4">You've completed the puzzle in {Math.floor(elapsedTime / 1000)} seconds.</p>
             <button
               onClick={() => {
                 setIsSolved(false);
