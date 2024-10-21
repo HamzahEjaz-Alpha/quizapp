@@ -68,7 +68,7 @@ function App() {
         {grid.map((value, index) => (
           <div
             key={index}
-            className="tile bg-gradient-to-tr from-indigo-100 to-indigo-800 text-2xl font-bold text-center w-24 h-24 flex items-center rounded-md justify-center cursor-pointer"
+            className="tile bg-gradient-to-tr from-indigo-100 to-indigo-800 text-2xl font-bold text-center w-24 h-24 hover:animate-pulse flex items-center rounded-md justify-center cursor-pointer"
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
             onDrop={(e) => handleDrop(e, index)}
