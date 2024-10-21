@@ -48,6 +48,7 @@ const App = () => {
 
         // Save image to localStorage
         localStorage.setItem('uploadedImage', reader.result);
+        sessionStorage.setItem('imageUploaded', 'yes');
       };
       reader.readAsDataURL(file);
     }
@@ -124,7 +125,6 @@ const App = () => {
   }, [isStarted]);
 
   useEffect(() => {
-    // Load previous state from localStorage
     const savedImage = localStorage.getItem('uploadedImage');
     const savedState = JSON.parse(localStorage.getItem('puzzleState'));
 
@@ -143,9 +143,20 @@ const App = () => {
       setIsStarted(savedState.isStarted);
 
       if (savedState.isStarted) {
-        setElapsedTime(savedState.elapsedTime); // Resume timer
+        setElapsedTime(savedState.elapsedTime); 
       }
     }
+    console.log("session storage is",sessionStorage.getItem('imageUploaded')===null)
+
+    if(sessionStorage.getItem('imageUploaded')===null){
+      localStorage.removeItem('uploadedImage'); 
+      setGrid([])
+      setElapsedTime(0)
+      setIsSolved(false)
+
+    }
+   
+    
   }, []);
 
   useEffect(() => {
